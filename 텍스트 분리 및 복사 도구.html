@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>텍스트 분리 및 관리 도구</title>
+    <style>
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: #1a1f36;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            box-sizing: border-box;
+            border: 2px solid #e3e8ee;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #5469d4;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background-color: #5469d4;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            margin-bottom: 30px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary:hover {
+            background-color: #4355b9;
+        }
+
+        .result-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #4f566b;
+            border-bottom: 2px solid #e3e8ee;
+            padding-bottom: 8px;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #e3e8ee;
+            transition: background-color 0.2s;
+        }
+
+        .text-content {
+            flex: 1;
+            font-size: 15px;
+            cursor: pointer;
+            padding-right: 15px;
+            word-break: break-all;
+        }
+
+        .text-content:hover {
+            color: #5469d4;
+            text-decoration: underline;
+        }
+
+        .edit-input {
+            flex: 1;
+            font-size: 15px;
+            padding: 6px 10px;
+            border: 2px solid #5469d4;
+            border-radius: 4px;
+            outline: none;
+            margin-right: 15px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn-group button {
+            border: none;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .edit-btn {
+            background-color: #e3e8ee;
+            color: #4f566b;
+        }
+
+        .edit-btn:hover {
+            background-color: #cbd3dc;
+        }
+
+        .save-mode .edit-btn {
+            background-color: #2ed573;
+            color: white;
+        }
+
+        .save-mode .edit-btn:hover {
+            background-color: #26af5f;
+        }
+
+        .delete-btn {
+            background-color: #ff4757;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #e03d4b;
+        }
+
+        /* Toast 알림 스타일 */
+        .toast {
+            position: fixed;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(33, 37, 41, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            transition: bottom 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast.show {
+            bottom: 30px;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>텍스트 분리 및 복사 도구</h1>
+    <textarea id="inputText" placeholder="여기에 텍스트를 입력하세요. 엔터(줄바꿈)를 기준으로 문장이 분류됩니다."></textarea>
+    <button class="btn-primary" onclick="processText()">문장 분리하기</button>
+
+    <div class="result-title">분리된 문장 리스트 (클릭 시 복사)</div>
+    <div id="resultList"></div>
+</div>
+
+<div id="toast" class="toast">복사되었습니다!</div>
+
+<script>
+    // 텍스트 분리 프로세스
+    function processText() {
+        const inputText = document.getElementById('inputText').value;
+        const resultList = document.getElementById('resultList');
+        
+        // 기존 결과 초기화
+        resultList.innerHTML = '';
+
+        // 엔터 기준으로 분리하고 양끝 공백 제거 후 빈 줄은 필터링
+        const lines = inputText.split('\n')
+                               .map(line => line.trim())
+                               .filter(line => line.length > 0);
+
+        if (lines.length === 0) {
+            resultList.innerHTML = '<div style="color: #a0aec0; text-align: center; padding: 20px;">분리할 내용이 없습니다.</div>';
+            return;
+        }
+
+        lines.forEach(line => {
+            const row = createRow(line);
+            resultList.appendChild(row);
+        });
+    }
+
+    // 각 문장 행(Row) 생성 함수
+    function createRow(text) {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+
+        // 텍스트 표시 영역
+        const textSpan = document.createElement('span');
+        textSpan.className = 'text-content';
+        textSpan.innerText = text;
+        textSpan.title = "클릭하면 복사됩니다";
+        
+        // 클릭 시 복사 이벤트 추가
+        textSpan.onclick = function() {
+            // 수정 중일 때는 클릭 복사 작동 안 함
+            if (row.classList.contains('save-mode')) return;
+            
+            navigator.clipboard.writeText(textSpan.innerText).then(() => {
+                showToast(`복사 완료: "${textSpan.innerText}"`);
+            }).catch(err => {
+                console.error('복사 실패:', err);
+            });
+        };
+
+        // 버튼 그룹
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+
+        // 수정 버튼
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.innerText = '수정';
+        
+        editBtn.onclick = function() {
+            if (row.classList.contains('save-mode')) {
+                // 저장 로직
+                const input = row.querySelector('.edit-input');
+                const updatedText = input.value.trim();
+                
+                if (updatedText === '') {
+                    alert('내용을 입력해주세요.');
+                    return;
+                }
+
+                textSpan.innerText = updatedText;
+                input.replaceWith(textSpan);
+                editBtn.innerText = '수정';
+                row.classList.remove('save-mode');
+            } else {
+                // 수정 모드 전환 로직
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'edit-input';
+                input.value = textSpan.innerText;
+
+                textSpan.replaceWith(input);
+                editBtn.innerText = '저장';
+                row.classList.add('save-mode');
+                input.focus();
+
+                // 엔터 키 누르면 저장되도록 설정
+                input.onkeydown = function(e) {
+                    if (e.key === 'Enter') editBtn.click();
+                };
+            }
+        };
+
+        // 삭제 버튼
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerText = '삭제';
+        deleteBtn.onclick = function() {
+            row.remove();
+            if (document.getElementById('resultList').children.length === 0) {
+                document.getElementById('resultList').innerHTML = '<div style="color: #a0aec0; text-align: center; padding: 20px;">모든 내용이 삭제되었습니다.</div>';
+            }
+        };
+
+        // 결합
+        row.appendChild(textSpan);
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+        row.appendChild(btnGroup);
+
+        return row;
+    }
+
+    // 토스트 알림 표시 함수
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2000);
+    }
+</script>
+
+</body>
+</html>
